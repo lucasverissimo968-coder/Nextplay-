@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>NEXT PLAY</title>
+<style>
+:root{--bg:#fff;--fg:#1c1f26;--mut:#6b7280;--card:#f3f5f9;--acc:#009ddc;--bd:#d9dde5}
+@media (prefers-color-scheme:dark){:root{--bg:#14161b;--fg:#f1f3f7;--mut:#9aa1ae;--card:#1f232b;--bd:#323846;color-scheme:dark}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,sans-serif}
+.top{background:var(--acc);color:#fff;text-align:center;padding:10px;font-weight:600}
+header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px}
+.logo{font-family:Impact,'Arial Black',sans-serif;font-size:30px;line-height:.95;text-shadow:2px 2px 0 #1c1f26}.logo b{display:block}.logo .a{color:#ffd200}.logo .b{color:#ff3d3d}
+button{font:inherit;cursor:pointer;border:0;border-radius:10px;padding:10px 14px;background:var(--acc);color:#fff;font-weight:600}button.g{background:var(--card);color:var(--fg);border:1px solid var(--bd)}button.r{background:#d33}
+input,textarea{width:100%;font:inherit;padding:12px;border:1px solid var(--bd);border-radius:10px;background:var(--bg);color:var(--fg);margin:4px 0}
+.srch{padding:0 16px 12px}.car{position:relative;height:340px;overflow:hidden;background:#000;margin-bottom:8px}
+.sl{position:absolute;inset:0;opacity:0;transition:opacity .6s;background-size:cover;background-position:center;display:flex;align-items:flex-end;cursor:pointer}.sl.on{opacity:1}
+.sl div{width:100%;padding:40px 16px 34px;background:linear-gradient(transparent,#000c);color:#fff}.sl h2{margin:0 0 4px}
+.dots{position:absolute;bottom:10px;left:0;right:0;text-align:center}.dots i{display:inline-block;width:10px;height:10px;border-radius:50%;background:#aaa;margin:0 5px}.dots i.on{background:#fff}
+h3.t{text-align:center;text-transform:uppercase;margin:18px 16px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:0 16px 24px}@media(min-width:700px){.grid{grid-template-columns:repeat(4,1fr)}}
+.card{background:var(--card);border-radius:12px;overflow:hidden;cursor:pointer}.card img,.ph{width:100%;aspect-ratio:3/4;object-fit:cover;display:block;background:#889}
+.card p{margin:8px 10px 2px;font-weight:600;font-size:14px}.card span{display:block;margin:0 10px 10px;color:var(--acc);font-weight:700}.empty{text-align:center;color:var(--mut);padding:30px 16px}
+.modal{position:fixed;inset:0;background:#000a;display:none;align-items:flex-end;justify-content:center;z-index:9}.modal.on{display:flex}
+.sheet{background:var(--bg);width:100%;max-width:560px;max-height:92%;overflow:auto;border-radius:18px 18px 0 0;padding:18px}
+.cv{width:100%;max-height:300px;object-fit:cover;border-radius:12px}.row{display:flex;gap:8px;margin-top:10px}.row>*{flex:1}
+.pix{text-align:center}.pix img{max-width:240px;width:100%}.code{font-size:26px;font-weight:800;letter-spacing:2px;background:var(--card);padding:12px;border-radius:10px;text-align:center;margin:10px 0}
+table{width:100%;border-collapse:collapse;font-size:13px}td,th{border-bottom:1px solid var(--bd);padding:6px;text-align:left}.sc{overflow-x:auto}small{color:var(--mut)}.err{color:#d33}
+</style></head><body>
+<div class="top">JOGOS A PARTIR DE R$19,90</div>
+<header><div class="logo"><b class="a">NEXT</b><b class="b">PLAY</b></div><div style="text-align:right"><small id="who"></small><br><button class="g" id="acct" style="padding:6px 10px">Entrar / Cadastrar</button></div></header>
+<div class="srch"><input id="q" type="search" placeholder="Pesquisar jogos…"></div>
+<div class="car" id="car"></div><h3 class="t">Jogos mais vendidos</h3><div class="grid" id="grid"></div>
+<div class="modal" id="m"><div class="sheet" id="sh"></div></div>
+<script>
+const $=s=>document.querySelector(s),brl=v=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}),
+esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const api=async(u,method='GET',body)=>{const o={method,headers:{}};if(body instanceof FormData)o.body=body;else if(body){o.headers['Content-Type']='application/json';o.body=JSON.stringify(body)}const r=await fetch('/api'+u,o);const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||'Erro');return j};
+let me=null,games=[],pix={},slide=0,timer;const staff=()=>me&&['admin','mod'].includes(me.role),img=f=>f?'/uploads/'+f:'';
+async function load(){me=await api('/me').catch(()=>null);games=await api('/games');pix=await api('/pix');$('#who').textContent=me?'Olá, '+me.name:'';$('#acct').textContent=me?'Minha Conta':'Entrar / Cadastrar';render()}
+function render(){const q=$('#q').value.trim().toLowerCase(),l=games.filter(g=>!q||(g.title+' '+g.desc).toLowerCase().includes(q));
+$('#grid').innerHTML=l.length?l.map(g=>`<div class="card" onclick="openGame(${g.id})">${g.img?`<img src="${img(g.img)}" alt="">`:'<div class="ph"></div>'}<p>${esc(g.title)}</p><span>${brl(g.price)}</span></div>`).join(''):`<div class="empty" style="grid-column:1/-1">${games.length?'Nenhum jogo encontrado.':'Em breve novos jogos por aqui.'}</div>`;
+const f=games.filter(g=>g.img).slice(0,5),n=f.length;$('#car').style.display=n?'block':'none';
+$('#car').innerHTML=f.map((g,i)=>`<div class="sl ${i==slide%n?'on':''}" style="background-image:url(${img(g.img)})" onclick="openGame(${g.id})"><div><h2>${esc(g.title)}</h2>${brl(g.price)}</div></div>`).join('')+`<div class="dots">${f.map((_,i)=>`<i class="${i==slide%n?'on':''}"></i>`).join('')}</div>`;
+clearInterval(timer);if(n>1)timer=setInterval(()=>{slide++;document.querySelectorAll('.sl').forEach((e,i)=>e.classList.toggle('on',i==slide%n));document.querySelectorAll('.dots i').forEach((e,i)=>e.classList.toggle('on',i==slide%n))},3500)}
+$('#q').oninput=render;const show=h=>{$('#sh').innerHTML=h;$('#m').classList.add('on')},close=()=>$('#m').classList.remove('on');$('#m').onclick=e=>{if(e.target.id=='m')close()};
+function openGame(id){const g=games.find(x=>x.id==id);show(`${g.img?`<img class="cv" src="${img(g.img)}">`:''}<h2>${esc(g.title)}</h2><h3 style="color:var(--acc);margin:0">${brl(g.price)}</h3><p style="white-space:pre-wrap">${esc(g.desc)}</p>
+<div class="row"><button class="g" onclick="close()">Fechar</button><button onclick="buy(${id})">Comprar com Pix</button></div>${me&&me.role=='admin'?`<div class="row"><button class="g" onclick="editGame(${id})">Editar</button><button class="r" onclick="delGame(${id})">Excluir</button></div>`:''}`)}
+async function pay(id){try{const r=await api('/orders','POST',{gid:id});show(`<div class="pix"><h3>Pague via Pix</h3><img src="data:image/png;base64,${r.qr64}" alt="QR Code Pix"><p><small>Pix copia e cola</small></p><input readonly value="${esc(r.qr)}" onclick="this.select()"><p><small>Aguardando pagamento… a liberação é automática.</small></p><div class="code">${r.code}</div></div>`);poll(r.code)}catch(e){show(`<p class="err">${esc(e.message)}</p><button class="g" onclick="close()">Fechar</button>`)}}
+let pt;function poll(c){clearInterval(pt);pt=setInterval(async()=>{if(!$('#m').classList.contains('on'))return clearInterval(pt);try{const o=await api('/orders/'+c);if(o.status=='pago'){clearInterval(pt);show(`<h3>Pagamento confirmado! 🎮</h3><div class="code">${c}</div>${o.link?`<a href="${esc(o.link)}" target="_blank" rel="noopener"><button style="width:100%">Baixar jogo</button></a>`:'<p>Seu link será liberado em breve.</p>'}<div class="row"><button class="g" onclick="close()">Fechar</button></div>`)}}catch(e){}},4000)}
+function buy(id){if(!me)return auth();if(pix.auto)return pay(id);const g=games.find(x=>x.id==id);if(!pix.key&&!pix.qr)return show('<p>Pix ainda não configurado.</p><button class="g" onclick="close()">Fechar</button>');
+show(`<div class="pix"><h3>Pague ${brl(g.price)} via Pix</h3><p>${esc(g.title)}</p>${pix.qr?`<img src="${img(pix.qr)}" alt="QR Code Pix">`:''}${pix.key?`<p><small>Chave / Pix copia e cola</small></p><input readonly value="${esc(pix.key)}" onclick="this.select()">`:''}
+<p><small>Depois de pagar, toque em “Já paguei” para gerar o código da compra.</small></p><div class="row"><button class="g" onclick="close()">Cancelar</button><button onclick="paid(${id})">Já paguei</button></div></div>`)}
+async function paid(id){try{const{code}=await api('/orders','POST',{gid:id});show(`<h3>Compra registrada!</h3><div class="code">${code}</div><p><small>Guarde este código. Seu pedido será confirmado após a conferência do Pix.</small></p><button onclick="close()">Ok</button>`)}catch(e){show(`<p class="err">${esc(e.message)}</p>`)}}
+function auth(reg){show(`<h3>${reg?'Criar conta':'Entrar'}</h3>${reg?'<input id="an" placeholder="Nome">':''}<input id="ae" type="email" placeholder="E-mail"><input id="ap" type="password" placeholder="Senha (mín. 6)"><p class="err" id="ar"></p>
+<div class="row"><button class="g" onclick="auth(${!reg})">${reg?'Já tenho conta':'Criar conta'}</button><button onclick="doAuth(${!!reg})">${reg?'Cadastrar':'Entrar'}</button></div>`)}
+async function doAuth(reg){try{await api(reg?'/register':'/login','POST',{name:reg?$('#an').value:'',email:$('#ae').value,password:$('#ap').value});close();load()}catch(e){$('#ar').textContent=e.message}}
+$('#acct').onclick=async()=>{if(!me)return auth();const o=await api('/orders');show(`<h3>Minha Conta</h3><p>${esc(me.name)} <small>${esc(me.email)}</small></p><h4>Meus pedidos</h4>${o.length&&!staff()?`<div class="sc"><table>${o.map(x=>`<tr><td><b>${x.code}</b></td><td>${esc(x.game)}</td><td>${x.status}</td><td>${x.link?`<a href="${esc(x.link)}" target="_blank" rel="noopener">Baixar</a>`:''}</td></tr>`).join('')}</table></div>`:'<p class="empty">'+(staff()?'Veja as compras no painel.':'Nenhum pedido ainda.')+'</p>'}
+${staff()?'<div class="row"><button onclick="panel()">Painel da loja</button></div>':''}<div class="row"><button class="g" onclick="api(\'/logout\',\'POST\').then(()=>{close();load()})">Sair</button><button class="g" onclick="close()">Fechar</button></div>`)};
+async function panel(){const o=await api('/orders'),adm=me.role=='admin',us=adm?await api('/users'):[];
+show(`<h3>Painel da loja</h3>${adm?'<div class="row"><button onclick="editGame()">+ Novo jogo</button><button class="g" onclick="cfgPix()">Configurar Pix</button></div>':''}<h4>Compras</h4>
+${o.length?`<div class="sc"><table><tr><th>Código</th><th>Jogo</th><th>Quando</th><th>Conta</th><th></th></tr>${o.map(x=>`<tr><td><b>${x.code}</b></td><td>${esc(x.game)}<br><small>${brl(x.price)}</small></td><td>${new Date(x.at).toLocaleString('pt-BR')}</td><td>${esc(x.uname)}<br><small>${esc(x.email)}</small></td><td>${x.status=='pago'?'✓ pago':`<button onclick="conf('${x.code}')">Confirmar</button>`}</td></tr>`).join('')}</table></div>`:'<p class="empty">Sem compras.</p>'}
+${adm?`<h4>Moderadores</h4><div class="sc"><table>${us.filter(u=>u.role!='admin').map(u=>`<tr><td>${esc(u.name)}<br><small>${esc(u.email)}</small></td><td><button class="g" onclick="role(${u.id},'${u.role=='mod'?'user':'mod'}')">${u.role=='mod'?'Remover mod':'Tornar mod'}</button></td></tr>`).join('')}</table></div>`:''}
+<div class="row"><button class="g" onclick="close()">Fechar</button></div>`)}
+const conf=async c=>{await api('/orders/'+c+'/confirm','POST');panel()},role=async(i,r)=>{await api('/users/'+i+'/role','POST',{role:r});panel()};
+function editGame(id){const g=games.find(x=>x.id==id)||{};show(`<h3>${id?'Editar':'Novo'} jogo</h3><input id="gt" placeholder="Nome" value="${esc(g.title||'')}"><input id="gp" type="number" step="0.01" placeholder="Preço (R$)" value="${g.price||''}"><textarea id="gd" rows="4" placeholder="Descrição">${esc(g.desc||'')}</textarea><input id="gl" type="url" placeholder="Link de download (https://…)" value="${esc(g.link||'')}"><label>Imagem<input id="gi" type="file" accept="image/*"></label>
+<div class="row"><button class="g" onclick="panel()">Voltar</button><button onclick="saveGame(${id||0})">Salvar</button></div>`)}
+async function saveGame(id){const f=new FormData();f.append('title',$('#gt').value);f.append('price',$('#gp').value);f.append('desc',$('#gd').value);f.append('link',$('#gl').value);if($('#gi').files[0])f.append('img',$('#gi').files[0]);try{await api(id?'/games/'+id:'/games',id?'PUT':'POST',f);await load();panel()}catch(e){alert(e.message)}}
+async function delGame(id){if(confirm('Excluir?')){await api('/games/'+id,'DELETE');close();load()}}
+function cfgPix(){show(`<h3>Configurar Pix</h3><textarea id="pk" rows="3" placeholder="Chave Pix / copia e cola">${esc(pix.key||'')}</textarea><label>QR Code<input id="pq" type="file" accept="image/*"></label><div class="row"><button class="g" onclick="panel()">Voltar</button><button onclick="savePix()">Salvar</button></div>`)}
+async function savePix(){const f=new FormData();f.append('key',$('#pk').value);if($('#pq').files[0])f.append('qr',$('#pq').files[0]);try{await api('/pix','PUT',f);await load();panel()}catch(e){alert(e.message)}}
+load();
+</script></body></html>

@@ -1,0 +1,8 @@
+# Defina estas variaveis no painel da hospedagem
+ADMIN_EMAIL=voce@email.com
+ADMIN_PASSWORD=troque-esta-senha
+NODE_ENV=production
+# Mercado Pago: Seu app > Credenciais de producao > Access Token
+MP_ACCESS_TOKEN=APP_USR-xxxxxxxx
+# Endereco publico da loja, sem barra no final
+BASE_URL=https://nextplay.com.br
